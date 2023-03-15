@@ -58,7 +58,7 @@ class MockEnvIntegrationTests {
         CurrencyUnit usd = Monetary.getCurrency("USD");
         CurrencyUnit eur = Monetary.getCurrency("EUR");
 
-        when(exchangeRateClient.getExchangeRate(eur, usd)).thenReturn(BigDecimal.valueOf(100));
+        when(exchangeRateClient.getExchangeRate(eur, usd)).thenReturn(BigDecimal.valueOf(0.8412));
 
         mockMvc.perform(get("/order/1/receipt").param("currency", usd.toString()))
                 .andExpect(status().isOk());

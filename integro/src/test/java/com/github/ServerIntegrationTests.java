@@ -58,6 +58,11 @@ class ServerIntegrationTests {
     void createOrder() {
         // TODO: протестируйте успешное создание заказа на 100 евро
         // используя webClient
+        webClient.post().uri("/order")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"amount\":  \"EUR 100.0\"}")
+                .exchange()
+                .expectStatus().isCreated();
     }
 
     @Test
@@ -65,6 +70,14 @@ class ServerIntegrationTests {
         // TODO: протестируйте успешную оплату ранее созданного заказа валидной картой
         // используя webClient
         // Получите `id` заказа из базы данных, используя orderRepository
+        Order order = new Order(LocalDateTime.now(), BigDecimal.valueOf(100), false);
+        Long orderID = orderRepository.save(order).getId();
+
+        webClient.post().uri("/order/{id}/payment", orderID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"creditCardNumber\": \"4532756279624064\" }")
+                .exchange()
+                .expectStatus().isCreated();
     }
 
     @Test
@@ -73,5 +86,20 @@ class ServerIntegrationTests {
         // Создайте объект Order, Payment и выполните save, используя orderRepository
         // Используйте mockWebServer для получения conversion_rate
         // Сделайте запрос через webClient
+        Order order = new Order(LocalDateTime.now(), BigDecimal.valueOf(100.0), true);
+        Payment payment = new Payment(order, "4532756279624064");
+
+        Long orderID = orderRepository.save(order).getId();
+        paymentRepository.save(payment);
+
+        mockWebServer.enqueue(
+                new MockResponse().setResponseCode(200)
+                        .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .setBody("{\"conversion_rate\": 0.8412}")
+        );
+
+        webClient.get().uri("/order/{id}/receipt?currency=USD", orderID)
+                .exchange()
+                .expectStatus().isOk();
     }
 }
